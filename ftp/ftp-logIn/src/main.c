@@ -4,8 +4,10 @@
 #include <string.h>
 
 #define MAXLINE 4096
-#define USER_NAME "admin\r\n"
+#define USER_NAME "administrator\r\n"
 #define USER_PWD "123456\r\n"
+#define USER_NAME_OK "331"
+#define INVALID_PWD "530"
 
 int main(int argc,char ** argv){
 	
@@ -38,18 +40,21 @@ int main(int argc,char ** argv){
 	n = read(sockfd, read_buf, MAXLINE);
 	printf("ftp-->%s\r",read_buf);
 	
-	/*发送用户名*/
+	/*验证用户名*/
 	memset(write_buf,0,MAXLINE);
 	strcpy(write_buf,"USER ");
 	strcpy(write_buf+(strlen(write_buf)),USER_NAME);
 	printf("ftp-->%s\r",write_buf);	
 	write(sockfd, write_buf, strlen(write_buf));
-	/* 客户端接收服务器的响应码和信息，正常为 ”331 XXXXXXXXXXXXXXXXXXX” */
 	memset(read_buf,0,MAXLINE);
 	n =	read(sockfd, read_buf, MAXLINE);
+	if(!strstr(read_buf,USER_NAME_OK)){
+		printf("ftp-->%s\r",read_buf);
+		exit(-1);
+	}
 	printf("ftp-->%s\r",read_buf);
-
-	/*发送密码*/
+	
+	/*验证密码*/
 	memset(write_buf,0,MAXLINE);
 	strcpy(write_buf,"PASS ");
 	strcpy(write_buf+(strlen(write_buf)),USER_PWD);
@@ -57,7 +62,11 @@ int main(int argc,char ** argv){
 	write(sockfd, write_buf, strlen(write_buf));
 	memset(read_buf,0,MAXLINE);
 	n =	read(sockfd, read_buf, MAXLINE);
-	printf("ftp-->%s\r",read_buf);
+	if(strstr(read_buf,INVALID_PWD)){
+		printf("ftp-->%s\r",read_buf);
+		exit(-1);
+	}
+	printf("登陆成功!\n");
 
 	return 0;
 	
